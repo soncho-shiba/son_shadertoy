@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "raymarchingChair"
+		}
+	],
+	"settings": {
+		"glsl-linter.fileExtensions": {
+			"fragment.glsl": "frag",
+			"vertex.glsl": "vert"
+		},
+		"glsl-linter.validatorPath": "D:\\CG_Work\\Git\\ShaderToy\\glslang-master-windows-Release\\bin"
+	}
+}
