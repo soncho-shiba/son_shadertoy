@@ -70,6 +70,7 @@ vec3 rotate(vec3 p,float angle,vec3 axis){
 
 float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
     //原点をYminに変更
+    p=p-b.y;
     p=p-offset;
     vec3 q=abs(p)-b+r;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
@@ -81,11 +82,15 @@ float sdPlane(vec3 p,vec3 n,float h){
 }
 
 float sdChair(vec3 p){
-    p=rotate(p,-20.,vec3(0.,1.,0.));
+    p=rotate(p,90.,vec3(0.,1.,0.));
+    // TODO ：回転軸を合わせる
     //float whiteBox=sdRoundBox(rotP,vec3(40.,80.,40.),vec3(0.,80.,0.),1.);
-    float legs=sdRoundBox(vec3(abs(p.x),p.y,abs(p.z)),vec3(3.,35.,3.),1.,vec3(0.,35.,0.));
-    float seat=sdRoundBox(p,vec3(37.,6.,38.),5.,vec3(0.,70.,0.));
-    float d=min(legs,seat);
+    float legs=sdRoundBox(vec3(abs(p.x),p.y,abs(p.z)),vec3(3.,35.,3.),1.,vec3(0.,0.,0.));
+    float seat=sdRoundBox(p,vec3(37.,6.,37.),1.,vec3(0.,70.,0.));
+    float backrestSupport=sdRoundBox(vec3(p.x,p.y,abs(p.z)),vec3(3.,44.,3.),1.,vec3(0.,70.,0.));
+    float backrest=sdRoundBox(vec3(p.x,p.y,p.z),vec3(3.,22.,37.),1.,vec3(0.,100.,0.));
+    
+    float d=min(min(min(legs,seat),backrestSupport),backrest);
     return d;
 }
 
