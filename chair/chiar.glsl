@@ -5,10 +5,7 @@ const float MIN_DIST=0.;
 const float MAX_DIST=5000.;
 const float PRECISION=.0001;
 const vec3 SCENE_COLOR=vec3(.8,1.,1.);
-struct Surface{
-    float sd;// signed distance value
-    vec3 col;// color
-};
+
 // 角度ベクトルからXYZ順で回転行列を生成する関数
 mat3 rotationMatrix(vec3 rot){
     
@@ -40,33 +37,41 @@ mat3 rotationMatrix(vec3 rot){
     return rotationMatrix;
 }
 
-float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
-    //原点をYminに変更
-    p=p-b.y;
-    p=p-offset;
-    vec3 q=abs(p)-b+r;
-    return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
-}
 //https://iquilezles.org/articles/distfunctions/
 float sdPlane(vec3 p,vec3 n,float h){
     // nは正規化された法線である必要がある
     return dot(p,n)+h;
 }
 
+float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
+    offset.y+=b.y;//原点を(b.y)Yminに設定してoffsetする
+    p-=offset;
+    vec3 q=abs(p)-b+r;
+    return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
+}
+
 float sdChair(vec3 p){
-    p*=rotationMatrix(vec3(0.,110.,0));
+    p*=rotationMatrix(vec3(0.,200.,0));
     
-    //float whiteBox=sdRoundBox(rotP,vec3(40.,80.,40.),vec3(0.,80.,0.),1.);
-    float legs=sdRoundBox(vec3(abs(p.x),p.y,abs(p.z)),vec3(3.,35.,3.),1.,vec3(0.,0.,0.));
-    float seat=sdRoundBox(p,vec3(37.,6.,37.),1.,vec3(0.,70.,0.));
-    float backrestSupport=sdRoundBox(vec3(p.x,p.y,abs(p.z)),vec3(3.,44.,3.),1.,vec3(0.,70.,0.));
-    float backrest=sdRoundBox(vec3(p.x,p.y,p.z),vec3(3.,22.,37.),1.,vec3(0.,100.,0.));
+    float seat=sdRoundBox(p,vec3(30.,5.,28.),3.,vec3(0.,60.,0.));
+    float legR=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(22.,0.,20.));
+    float legL=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(-22.,0.,20.));
+    float frontSupport=sdRoundBox(p,vec3(25.,3.,3.),1.,vec3(0.,57.,20.));
+    float backSupportR=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(22.,0.,-27.));
+    float backSupportL=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(-22.,0.,-27.));
+    
+    float backrest=sdRoundBox(p,vec3(32.,20.,3.),3.,vec3(0.,100.,-20.));
+    
+    float whiteBox=sdRoundBox(p,vec3(40.,80.,40.),1.,vec3(0.));
     
     float d=0.;
-    d=min(legs,seat);
-    d=min(d,backrestSupport);
+    d=min(legR,legL);
+    d=min(d,seat);
+    d=min(d,frontSupport);
+    d=min(d,backSupportR);
+    d=min(d,backSupportL);
     d=min(d,backrest);
-    
+    // d=min(d,whiteBox);
     return d;
 }
 
