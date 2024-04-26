@@ -2,7 +2,7 @@
 #define PI 3.14159265
 const int MAX_MARCHING_STEPS=511;
 const float MIN_DIST=0.;
-const float MAX_DIST=100.;
+const float MAX_DIST=1000.;
 const float PRECISION=.0001;
 
 struct Surface{
@@ -68,11 +68,12 @@ vec3 rotate(vec3 p,float angle,vec3 axis){
     return m*p;
 }
 
-float sdRoundBox(vec3 p,vec3 b,float r){
+float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
+    //原点をYminに変更
+    p=p-offset;
     vec3 q=abs(p)-b+r;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
 }
-
 //https://iquilezles.org/articles/distfunctions/
 float sdPlane(vec3 p,vec3 n,float h){
     // nは正規化された法線である必要がある
@@ -80,13 +81,18 @@ float sdPlane(vec3 p,vec3 n,float h){
 }
 
 float sdChair(vec3 p){
-    vec3 rotatedP=rotate(p,-20.,vec3(0.,1.,0.));
-    float d=sdRoundBox(rotatedP,vec3(40.,80.,40.),1.);
+    p=rotate(p,-20.,vec3(0.,1.,0.));
+    //float whiteBox=sdRoundBox(rotP,vec3(40.,80.,40.),vec3(0.,80.,0.),1.);
+    float legs=sdRoundBox(vec3(abs(p.x),p.y,abs(p.z)),vec3(3.,35.,3.),1.,vec3(0.,35.,0.));
+    float seat=sdRoundBox(p,vec3(37.,6.,38.),5.,vec3(0.,70.,0.));
+    float d=min(legs,seat);
     return d;
 }
 
 float sdRoom(vec3 p){
-    return sdPlane(p,vec3(0.,1.,0.),0.);
+    float floor=sdPlane(p,vec3(0.,1.,0.),0.);
+    // float wall=sdPlane(p,vec3(0.,5.,1.),1000.);
+    return floor;
 }
 
 float map(vec3 p){
@@ -131,6 +137,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camForward=normalize(camOrigin-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=150.;
+    //TOOD:zoomを作成する
     
     vec3 ray=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=camOrigin;
