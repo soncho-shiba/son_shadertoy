@@ -52,6 +52,15 @@ float getMap(vec3 p){
     float floor=sdPlane(p,vec3(0,1,0),0.);
     float chair=sdRoundBox(p,vec3(40.,80.,40.),1.);
     return min(chair,floor);
+// https://iquilezles.org/articles/normalsSDF
+vec3 calcNormal(in vec3 pos)
+{
+    vec2 e=vec2(1.,-1.)*.5773;
+    const float eps=.0005;
+    return normalize(e.xyy*map(pos+e.xyy*eps)+
+    e.yyx*map(pos+e.yyx*eps)+
+    e.yxy*map(pos+e.yxy*eps)+
+    e.xxx*map(pos+e.xxx*eps));
 }
 
 void mainImage(out vec4 fragColor,in vec2 fragCoord)
@@ -90,9 +99,15 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
         total+=d;
         p=camOrigin+ray*total;
     }
+    
     vec3 col=vec3(0.,0.,0.);
     if(hit){
-        col=.5+.5*cos(iTime+uv.xyx+vec3(0,2,4));
+        vec3 normal=calcNormal(p);
+        vec3 diffuseCol=vec3(.8,.8,.7);
+        float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
+        vec3 ambientCol=vec3(.8,1.,1.);
+        float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
+        col=diffuseCol*diffuse+ambientCol*ambient;
     }
     else{
         col=vec3(0.,0.,0.);
