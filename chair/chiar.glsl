@@ -43,6 +43,14 @@ float sdPlane(vec3 p,vec3 n,float h){
     return dot(p,n)+h;
 }
 
+float sdBox(vec3 p,vec3 b,vec3 offset)
+{
+    offset.y+=b.y;//原点を(b.y)Yminに設定してoffsetする
+    p-=offset;
+    vec3 q=abs(p)-b;
+    return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.);
+}
+
 float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
     offset.y+=b.y;//原点を(b.y)Yminに設定してoffsetする
     p-=offset;
@@ -77,8 +85,8 @@ float sdChair(vec3 p){
 
 float sdRoom(vec3 p){
     float floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    // float wall=sdPlane(p,vec3(0.,5.,1.),1000.);
-    return floor;
+    float wall=sdBox(p,vec3(5000.,5000.,1.),vec3(0.,0.,1200.));
+    return min(floor,wall);
 }
 
 float map(vec3 p){
