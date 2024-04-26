@@ -4,7 +4,7 @@ const int MAX_MARCHING_STEPS=511;
 const float MIN_DIST=0.;
 const float MAX_DIST=5000.;
 const float PRECISION=.0001;
-
+const vec3 SCENE_COLOR=vec3(.8,1.,1.);
 struct Surface{
     float sd;// signed distance value
     vec3 col;// color
@@ -90,7 +90,11 @@ float sdChair(vec3 p){
     float backrestSupport=sdRoundBox(vec3(p.x,p.y,abs(p.z)),vec3(3.,44.,3.),1.,vec3(0.,70.,0.));
     float backrest=sdRoundBox(vec3(p.x,p.y,p.z),vec3(3.,22.,37.),1.,vec3(0.,100.,0.));
     
-    float d=min(min(min(legs,seat),backrestSupport),backrest);
+    float d=0.;
+    d=min(legs,seat);
+    d=min(d,backrestSupport);
+    d=min(d,backrest);
+    
     return d;
 }
 
@@ -130,6 +134,24 @@ vec3 calcNormal(in vec3 p){
     e.xxx*map(p+e.xxx*eps));
 }
 
+vec3 render(vec3 ro,vec3 rd){
+    vec3 col=SCENE_COLOR;
+    float d=rayMarch(ro,rd,MIN_DIST,MAX_DIST);
+
+    if(d>MAX_DIST)return col;// ray didn't hit anything
+    vec3 p =ro+rd*d;
+    vec3 normal=calcNormal(p);
+
+    vec3 lightPosition=vec3(357.,600.,6.);
+    mat3 lightRotMatrix=getRotationMatrix(vec3(-88.,5.5,-60.));
+    vec3 lightDirection=normalize(lightRotMatrix*vec3(0.,0.,-1.));
+    float dif=clamp(dot(normal,lightDirection),.3,1.);
+
+    col=dif*SCENE_COLOR;
+
+    return col;
+}
+
 void mainImage(out vec4 fragColor,in vec2 fragCoord)
 {
     vec3 col=vec3(0);
@@ -143,29 +165,18 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camTarget=vec3(0.,45.,0.);
     vec3 camRot=vec3(-5.,0.,0.);
     mat3 camRotMatrix=getRotationMatrix(camRot);
-    
+
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=150.;
     //TOOD:zoomを作成する
-    
+
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-    if(d>MAX_DIST){
-        col=sceneCol;// ray didn't hit anything
-    }else{
-        p=p+rd*d;// point on sphere we discovered from ray marching
-        vec3 normal=calcNormal(p);
-        
-        vec3 lightPosition=vec3(357.,600.,6.);
-        mat3 lightRotMatrix=getRotationMatrix(vec3(-88.,5.5,-60.));
-        vec3 lightDirection=normalize(lightRotMatrix*vec3(0.,0.,-1.));
-        float dif=clamp(dot(normal,lightDirection),.3,1.);
-        
-        col=dif*sceneCol;
-    }
-    
+
+    col = render(ro,rd);
+
     fragColor=vec4(col,1.);
 }
