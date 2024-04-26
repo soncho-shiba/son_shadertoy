@@ -1,6 +1,7 @@
 
 #define PI 3.14159265
 
+// 角度ベクトルからXYZ順で回転行列を生成する関数
 mat3 getRotationMatrix(vec3 rot){
     
     // 角度をラジアンに変換
@@ -31,6 +32,42 @@ mat3 getRotationMatrix(vec3 rot){
     return rotationMatrix;
 }
 
+// 任意の軸周りでベクトルを回転させる関数
+vec3 rotate(vec3 p,float angle,vec3 axis){
+    
+    // 回転軸を正規化
+    vec3 a=normalize(axis);
+    // サインとコサインを計算
+    float s=sin(angle);
+    float c=cos(angle);
+    
+    // 1 - cos(angle) を計算
+    float r=1.-c;
+    
+    // 回転行列の成分を計算
+    mat3 m=mat3(
+        a.x*a.x*r+c,// 列1, 行1
+        a.y*a.x*r+a.z*s,// 列1, 行2
+        a.z*a.x*r-a.y*s,// 列1, 行3
+        a.x*a.y*r-a.z*s,// 列2, 行1
+        a.y*a.y*r+c,// 列2, 行2
+        a.z*a.y*r+a.x*s,// 列2, 行3
+        a.x*a.z*r+a.y*s,// 列3, 行1
+        a.y*a.z*r-a.x*s,// 列3, 行2
+        a.z*a.z*r+c// 列3, 行3
+    );
+    // 行列をベクトルに適用して回転したベクトルを返す
+    return m*p;
+}
+
+vec2 rotate2dVec(vec2 vec,float angle)
+{
+    vec2 rotVec;
+    rotVec.x=vec.x*cos(angle)-vec.y*sin(angle);
+    rotVec.y=vec.x*sin(angle)+vec.y*cos(angle);
+    return rotVec;
+}
+
 float sdSphere(vec3 p,float r)
 {
     return length(p)-r;
@@ -42,16 +79,31 @@ float sdRoundBox(vec3 p,vec3 b,float r)
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
 }
 
+//https://iquilezles.org/articles/distfunctions/
 float sdPlane(vec3 p,vec3 n,float h){
     // nは正規化された法線
     // hは原点からの距離
     return dot(p,n)+h;
 }
 
+float mapChair(vec3 p){
+    
+    vec3 rotatedP=rotate(p,20.,vec3(0.,1.,0.));
+    
+    float chair=sdRoundBox(rotatedP,vec3(40.,80.,40.),1.);
+    
+    return chair;
+}
+
 float map(vec3 p){
-    float floor=sdPlane(p,vec3(0,1,0),0.);
-    float chair=sdRoundBox(p,vec3(40.,80.,40.),1.);
-    return min(chair,floor);
+    
+    float chair=mapChair(p);
+    
+    float floor=sdPlane(p,vec3(0.,1.,0.),0.);
+    // float wall=sdPlane(p-110.,vec3(0.,0.,1.),550.);
+    // float bg=min(floor,wall);
+    
+    return min(floor,chair);
 }
 
 // https://iquilezles.org/articles/normalsSDF
@@ -100,11 +152,12 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 col=vec3(0.,0.,0.);
     if(hit){
         vec3 normal=calcNormal(p);
-        vec3 diffuseCol=vec3(.8,.8,.7);
-        float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
-        vec3 ambientCol=vec3(.8,1.,1.);
-        float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
-        col=diffuseCol*diffuse+ambientCol*ambient;
+        col=normal;
+        // vec3 diffuseCol=vec3(.8,.8,.7);
+        // float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
+        // vec3 ambientCol=vec3(.8,1.,1.);
+        // float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
+        // col=diffuseCol*diffuse+ambientCol*ambient;
     }
     else{
         col=vec3(0.,0.,0.);
