@@ -2,7 +2,7 @@
 #define PI 3.14159265
 const int MAX_MARCHING_STEPS=511;
 const float MIN_DIST=0.;
-const float MAX_DIST=1000.;
+const float MAX_DIST=5000.;
 const float PRECISION=.0001;
 
 struct Surface{
@@ -107,6 +107,19 @@ float map(vec3 p){
     return min(chair,room);
 }
 
+float rayMarch(vec3 ro,vec3 rd,float start,float end){
+    float depth=start;
+    
+    for(int i=0;i<MAX_MARCHING_STEPS;i++){
+        vec3 p=ro+depth*rd;
+        float d=map(p);
+        depth+=d;
+        if(d<PRECISION||depth>end)break;
+    }
+    
+    return depth;
+}
+
 // https://iquilezles.org/articles/normalsSDF
 vec3 calcNormal(in vec3 p){
     vec2 e=vec2(1.,-1.)*.5773;
@@ -117,62 +130,42 @@ vec3 calcNormal(in vec3 p){
     e.xxx*map(p+e.xxx*eps));
 }
 
-float rayMarch(vec3 ro,vec3 rd,float start,float end){
-    float depth=start;
-    for(int i=0;i<MAX_MARCHING_STEPS;i++){
-        vec3 p=ro+depth*rd;
-        depth+=map(p);
-        if(depth<PRECISION||depth>end)break;
-    }
-    return depth;
-}
-
 void mainImage(out vec4 fragColor,in vec2 fragCoord)
 {
+    vec3 col=vec3(0);
+    vec3 sceneCol=vec3(.8,1.,1.);
+    
     vec2 uv=fragCoord/iResolution.xy;
     uv-=.5;
     uv.x*=iResolution.x/iResolution.y;
     
-    vec3 camOrigin=vec3(0.,130.,-817.);
+    vec3 ro=vec3(0.,130.,-817.);
     vec3 camTarget=vec3(0.,45.,0.);
     vec3 camRot=vec3(-5.,0.,0.);
     mat3 camRotMatrix=getRotationMatrix(camRot);
     
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
-    vec3 camForward=normalize(camOrigin-camTarget);
+    vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=150.;
     //TOOD:zoomを作成する
     
-    vec3 ray=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
-    vec3 p=camOrigin;
-    
-    float total=0.;
-    bool hit=false;
-    for(int i=0;i<512;i++)
-    {
-        float d=map(p);
-        if(d<PRECISION)
-        {
-            hit=true;
-            break;
-        }
-        total+=d;
-        p=camOrigin+ray*total;
-    }
-    
-    vec3 col=vec3(0);
-    vec3 sceneCol=vec3(.8,1.,1.);
-    if(hit){
+    vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
+    vec3 p=ro;
+    float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
+    if(d>MAX_DIST){
+        col=sceneCol;// ray didn't hit anything
+    }else{
+        p=p+rd*d;// point on sphere we discovered from ray marching
         vec3 normal=calcNormal(p);
-        vec3 diffuseCol=vec3(.8,.8,.7);
-        float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
-        vec3 ambientCol=vec3(.8,1.,1.);
-        float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
-        col=diffuseCol*diffuse+ambientCol*ambient;
+        
+        vec3 lightPosition=vec3(357.,600.,6.);
+        mat3 lightRotMatrix=getRotationMatrix(vec3(-88.,5.5,-60.));
+        vec3 lightDirection=normalize(lightRotMatrix*vec3(0.,0.,-1.));
+        float dif=clamp(dot(normal,lightDirection),.3,1.);
+        
+        col=dif*sceneCol;
     }
-    else{
-        col=vec3(0.,0.,0.);
-    }
+    
     fragColor=vec4(col,1.);
 }
