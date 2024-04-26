@@ -1,6 +1,14 @@
 
 #define PI 3.14159265
+const int MAX_MARCHING_STEPS=511;
+const float MIN_DIST=0.;
+const float MAX_DIST=100.;
+const float PRECISION=.0001;
 
+struct Surface{
+    float sd;// signed distance value
+    vec3 col;// color
+};
 // 角度ベクトルからXYZ順で回転行列を生成する関数
 mat3 getRotationMatrix(vec3 rot){
     
@@ -60,61 +68,52 @@ vec3 rotate(vec3 p,float angle,vec3 axis){
     return m*p;
 }
 
-vec2 rotate2dVec(vec2 vec,float angle)
-{
-    vec2 rotVec;
-    rotVec.x=vec.x*cos(angle)-vec.y*sin(angle);
-    rotVec.y=vec.x*sin(angle)+vec.y*cos(angle);
-    return rotVec;
-}
-
-float sdSphere(vec3 p,float r)
-{
-    return length(p)-r;
-}
-
-float sdRoundBox(vec3 p,vec3 b,float r)
-{
+float sdRoundBox(vec3 p,vec3 b,float r){
     vec3 q=abs(p)-b+r;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
 }
 
 //https://iquilezles.org/articles/distfunctions/
 float sdPlane(vec3 p,vec3 n,float h){
-    // nは正規化された法線
-    // hは原点からの距離
+    // nは正規化された法線である必要がある
     return dot(p,n)+h;
 }
 
-float mapChair(vec3 p){
-    
-    vec3 rotatedP=rotate(p,20.,vec3(0.,1.,0.));
-    
-    float chair=sdRoundBox(rotatedP,vec3(40.,80.,40.),1.);
-    
-    return chair;
+float sdChair(vec3 p){
+    vec3 rotatedP=rotate(p,-20.,vec3(0.,1.,0.));
+    float d=sdRoundBox(rotatedP,vec3(40.,80.,40.),1.);
+    return d;
+}
+
+float sdRoom(vec3 p){
+    return sdPlane(p,vec3(0.,1.,0.),0.);
 }
 
 float map(vec3 p){
-    
-    float chair=mapChair(p);
-    
-    float floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    // float wall=sdPlane(p-110.,vec3(0.,0.,1.),550.);
-    // float bg=min(floor,wall);
-    
-    return min(floor,chair);
+    vec3 sceneColor=vec3(.9,.9,.9);
+    float room=sdRoom(p);
+    float chair=sdChair(p);
+    return min(chair,room);
 }
 
 // https://iquilezles.org/articles/normalsSDF
-vec3 calcNormal(in vec3 pos)
-{
+vec3 calcNormal(in vec3 p){
     vec2 e=vec2(1.,-1.)*.5773;
     const float eps=.0005;
-    return normalize(e.xyy*map(pos+e.xyy*eps)+
-    e.yyx*map(pos+e.yyx*eps)+
-    e.yxy*map(pos+e.yxy*eps)+
-    e.xxx*map(pos+e.xxx*eps));
+    return normalize(e.xyy*map(p+e.xyy*eps)+
+    e.yyx*map(p+e.yyx*eps)+
+    e.yxy*map(p+e.yxy*eps)+
+    e.xxx*map(p+e.xxx*eps));
+}
+
+float rayMarch(vec3 ro,vec3 rd,float start,float end){
+    float depth=start;
+    for(int i=0;i<MAX_MARCHING_STEPS;i++){
+        vec3 p=ro+depth*rd;
+        depth+=map(p);
+        if(depth<PRECISION||depth>end)break;
+    }
+    return depth;
 }
 
 void mainImage(out vec4 fragColor,in vec2 fragCoord)
@@ -127,11 +126,12 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camTarget=vec3(0.,45.,0.);
     vec3 camRot=vec3(-5.,0.,0.);
     mat3 camRotMatrix=getRotationMatrix(camRot);
+    
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(camOrigin-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    
     float fov=150.;
+    
     vec3 ray=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=camOrigin;
     
@@ -140,7 +140,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     for(int i=0;i<512;i++)
     {
         float d=map(p);
-        if(d<.0001)
+        if(d<PRECISION)
         {
             hit=true;
             break;
@@ -149,15 +149,15 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
         p=camOrigin+ray*total;
     }
     
-    vec3 col=vec3(0.,0.,0.);
+    vec3 col=vec3(0);
+    vec3 sceneCol=vec3(.8,1.,1.);
     if(hit){
         vec3 normal=calcNormal(p);
-        col=normal;
-        // vec3 diffuseCol=vec3(.8,.8,.7);
-        // float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
-        // vec3 ambientCol=vec3(.8,1.,1.);
-        // float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
-        // col=diffuseCol*diffuse+ambientCol*ambient;
+        vec3 diffuseCol=vec3(.8,.8,.7);
+        float diffuse=clamp(dot(normal,vec3(.57703)),0.,1.);
+        vec3 ambientCol=vec3(.8,1.,1.);
+        float ambient=.5+.5*dot(normal,vec3(0.,1.,0.));
+        col=diffuseCol*diffuse+ambientCol*ambient;
     }
     else{
         col=vec3(0.,0.,0.);
