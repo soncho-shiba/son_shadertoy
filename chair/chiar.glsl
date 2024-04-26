@@ -10,7 +10,7 @@ struct Surface{
     vec3 col;// color
 };
 // 角度ベクトルからXYZ順で回転行列を生成する関数
-mat3 getRotationMatrix(vec3 rot){
+mat3 rotationMatrix(vec3 rot){
     
     // 角度をラジアンに変換
     float radX=radians(rot.x);
@@ -40,34 +40,6 @@ mat3 getRotationMatrix(vec3 rot){
     return rotationMatrix;
 }
 
-// 任意の軸周りでベクトルを回転させる関数
-vec3 rotate(vec3 p,float angle,vec3 axis){
-    
-    // 回転軸を正規化
-    vec3 a=normalize(axis);
-    // サインとコサインを計算
-    float s=sin(angle);
-    float c=cos(angle);
-    
-    // 1 - cos(angle) を計算
-    float r=1.-c;
-    
-    // 回転行列の成分を計算
-    mat3 m=mat3(
-        a.x*a.x*r+c,// 列1, 行1
-        a.y*a.x*r+a.z*s,// 列1, 行2
-        a.z*a.x*r-a.y*s,// 列1, 行3
-        a.x*a.y*r-a.z*s,// 列2, 行1
-        a.y*a.y*r+c,// 列2, 行2
-        a.z*a.y*r+a.x*s,// 列2, 行3
-        a.x*a.z*r+a.y*s,// 列3, 行1
-        a.y*a.z*r-a.x*s,// 列3, 行2
-        a.z*a.z*r+c// 列3, 行3
-    );
-    // 行列をベクトルに適用して回転したベクトルを返す
-    return m*p;
-}
-
 float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
     //原点をYminに変更
     p=p-b.y;
@@ -82,8 +54,8 @@ float sdPlane(vec3 p,vec3 n,float h){
 }
 
 float sdChair(vec3 p){
-    p=rotate(p,90.,vec3(0.,1.,0.));
-    // TODO ：回転軸を合わせる
+    p*=rotationMatrix(vec3(0.,110.,0));
+    
     //float whiteBox=sdRoundBox(rotP,vec3(40.,80.,40.),vec3(0.,80.,0.),1.);
     float legs=sdRoundBox(vec3(abs(p.x),p.y,abs(p.z)),vec3(3.,35.,3.),1.,vec3(0.,0.,0.));
     float seat=sdRoundBox(p,vec3(37.,6.,37.),1.,vec3(0.,70.,0.));
@@ -137,18 +109,18 @@ vec3 calcNormal(in vec3 p){
 vec3 render(vec3 ro,vec3 rd){
     vec3 col=SCENE_COLOR;
     float d=rayMarch(ro,rd,MIN_DIST,MAX_DIST);
-
+    
     if(d>MAX_DIST)return col;// ray didn't hit anything
-    vec3 p =ro+rd*d;
+    vec3 p=ro+rd*d;
     vec3 normal=calcNormal(p);
-
+    
     vec3 lightPosition=vec3(357.,600.,6.);
-    mat3 lightRotMatrix=getRotationMatrix(vec3(-88.,5.5,-60.));
+    mat3 lightRotMatrix=rotationMatrix(vec3(-88.,5.5,-60.));
     vec3 lightDirection=normalize(lightRotMatrix*vec3(0.,0.,-1.));
     float dif=clamp(dot(normal,lightDirection),.3,1.);
-
+    
     col=dif*SCENE_COLOR;
-
+    
     return col;
 }
 
@@ -163,20 +135,19 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     
     vec3 ro=vec3(0.,130.,-817.);
     vec3 camTarget=vec3(0.,45.,0.);
-    vec3 camRot=vec3(-5.,0.,0.);
-    mat3 camRotMatrix=getRotationMatrix(camRot);
-
+    mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
+    
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=150.;
     //TOOD:zoomを作成する
-
+    
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-
-    col = render(ro,rd);
-
+    
+    col=render(ro,rd);
+    
     fragColor=vec4(col,1.);
 }
