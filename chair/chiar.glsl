@@ -48,10 +48,12 @@ float sdPlane(vec3 p,vec3 n,float h){
     return dot(p,n)+h;
 }
 
-float getMap(vec3 p){
+float map(vec3 p){
     float floor=sdPlane(p,vec3(0,1,0),0.);
     float chair=sdRoundBox(p,vec3(40.,80.,40.),1.);
     return min(chair,floor);
+}
+
 // https://iquilezles.org/articles/normalsSDF
 vec3 calcNormal(in vec3 pos)
 {
@@ -69,28 +71,23 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv-=.5;
     uv.x*=iResolution.x/iResolution.y;
     
-    // ワールド基底ベクトル
-    vec3 forward=vec3(0.,0.,-1.);
-    vec3 up=vec3(0.,1.,0.);
-    
-    // camera
-    vec3 camOrigin=vec3(0.,136.1,816);
-    vec3 camRot=vec3(-3.,-.8,0.);
+    vec3 camOrigin=vec3(0.,130.,-817.);
+    vec3 camTarget=vec3(0.,45.,0.);
+    vec3 camRot=vec3(-5.,0.,0.);
     mat3 camRotMatrix=getRotationMatrix(camRot);
-    
-    vec3 camForward=normalize(camRotMatrix*forward);
-    vec3 camUp=normalize(camRotMatrix*forward);
+    vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
+    vec3 camForward=normalize(camOrigin-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    float fov=100.;
     
-    vec3 ray=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(fov/360.*PI));
+    float fov=150.;
+    vec3 ray=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=camOrigin;
     
     float total=0.;
     bool hit=false;
     for(int i=0;i<512;i++)
     {
-        float d=getMap(p);
+        float d=map(p);
         if(d<.0001)
         {
             hit=true;
