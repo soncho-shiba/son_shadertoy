@@ -4,7 +4,7 @@ const int MAX_MARCHING_STEPS=511;
 const float MIN_DIST=0.;
 const float MAX_DIST=5000.;
 const float PRECISION=.0001;
-const vec3 SCENE_COLOR=vec3(.8,1.,1.);
+const vec3 SKY_COLOR=vec3(.6627,.9608,.9137);
 
 // 角度ベクトルからXYZ順で回転行列を生成する関数
 mat3 rotationMatrix(vec3 rot){
@@ -90,7 +90,6 @@ float sdRoom(vec3 p){
 }
 
 float map(vec3 p){
-    vec3 sceneColor=vec3(.9,.9,.9);
     float room=sdRoom(p);
     float chair=sdChair(p);
     return min(chair,room);
@@ -119,28 +118,78 @@ vec3 calcNormal(in vec3 p){
     e.xxx*map(p+e.xxx*eps));
 }
 
+float calcAO(vec3 pos,vec3 nor)
+{
+    float occ=0.;
+    float sca=1.;
+    for(int i=0;i<5;i++)
+    {
+        float h=.01+.12*float(i)/4.;
+        float d=map(pos+h*nor);
+        occ+=(h-d)*sca;
+        sca*=.95;
+        if(occ>.35)break;
+    }
+    return clamp(1.-3.*occ,0.,1.)*(.5+.5*nor.y);
+}
+
+// http://iquilezles.org/www/articles/rmshadows/rmshadows.htm
+float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
+{
+    // bounding volume
+    float tp=(.8-ro.y)/rd.y;
+    if(tp>0.)tmax=min(tmax,tp);
+
+    float res=1.;
+    float t=mint;
+    for(int i=0;i<24;i++)
+    {
+        float h=map(ro+rd*t);
+        float s=clamp(8.*h/t,0.,1.);
+        res=min(res,s*s*(3.-2.*s));
+        t+=clamp(h,.02,.2);
+        if(res<.004||t>tmax)break;
+    }
+    return clamp(res,0.,1.);
+}
+
+vec3 acesFilm(vec3 x)
+{
+    const float a=2.51;
+    const float b=.03;
+    const float c=2.43;
+    const float d=.59;
+    const float e=.14;
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0., 1.);
+}
+
 vec3 render(vec3 ro,vec3 rd){
-    vec3 col=SCENE_COLOR;
+    vec3 col=vec3(0.);
+    
     float d=rayMarch(ro,rd,MIN_DIST,MAX_DIST);
     
     if(d>MAX_DIST)return col;// ray didn't hit anything
     vec3 p=ro+rd*d;
     vec3 normal=calcNormal(p);
     
-    vec3 lightPosition=vec3(357.,600.,6.);
-    mat3 lightRotMatrix=rotationMatrix(vec3(-88.,5.5,-60.));
-    vec3 lightDirection=normalize(lightRotMatrix*vec3(0.,0.,-1.));
-    float dif=clamp(dot(normal,lightDirection),.3,1.);
+    vec3 lightDir=normalize(vec3(1.,.6,-1.));
+    vec3 albedo=vec3(.7,.6,.6);
+    float diffuse=clamp(dot(normal,lightDir),.3,1.);
+    float specular=pow(clamp(dot(reflect(lightDir,normal),rd),0.,1.), 10.);
+    float ao=calcAO(p,normal);
+    float shadow=calcSoftshadow(p,lightDir,.25,5.);
     
-    col=dif*SCENE_COLOR;
+    col+=albedo*diffuse*shadow;
+    col+=albedo*ao*SKY_COLOR;
     
+    col=acesFilm(col*.8);
+    col*=.8;
     return col;
 }
 
 void mainImage(out vec4 fragColor,in vec2 fragCoord)
 {
     vec3 col=vec3(0);
-    vec3 sceneCol=vec3(.8,1.,1.);
     
     vec2 uv=fragCoord/iResolution.xy;
     uv-=.5;
@@ -155,12 +204,11 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=150.;
     //TOOD:zoomを作成する
-    
+
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-    
+
     col=render(ro,rd);
-    
     fragColor=vec4(col,1.);
 }
