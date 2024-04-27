@@ -87,14 +87,21 @@ float sdChair(vec3 p){
     d=min(d,sideSupportMiddleR);
     d=min(d,sideSupportMiddleL);
     d=min(d,backrest);
-    // d=min(d,whiteBox);
+    //d=min(d,whiteBox);
     return d;
 }
 
 float sdRoom(vec3 p){
     float floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    float wall=sdBox(p,vec3(5000.,5000.,1.),vec3(0.,0.,1200.));
-    return min(floor,wall);
+    float backWall=sdBox(p,vec3(5000.,5000.,1.),vec3(0.,0.,1200.));
+    p*=rotationMatrix(vec3(0.,0.,0));
+    float sideWindow=sdBox(p,vec3(2.,300.,200.),vec3(100.,80.,0.));
+    float sideWall=sdBox(p,vec3(1.,5000.,5000.),vec3(100.,0.,0.));
+    
+    float d=0.;
+    d=min(floor,backWall);
+    d=min(d,max(sideWall,-sideWindow));
+    return d;
 }
 
 float map(vec3 p){
