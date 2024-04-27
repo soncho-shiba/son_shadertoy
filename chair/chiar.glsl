@@ -45,6 +45,7 @@ float sdPlane(vec3 p,vec3 n,float h){
 
 float sdBox(vec3 p,vec3 b,vec3 offset)
 {
+    
     offset.y+=b.y;//原点を(b.y)Yminに設定してoffsetする
     p-=offset;
     vec3 q=abs(p)-b;
@@ -59,9 +60,9 @@ float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
 }
 
 float sdChair(vec3 p){
-
-    p*=rotationMatrix(vec3(0.,210.,0));
-
+    
+    p*=rotationMatrix(vec3(0.,200.,0));
+    
     float seat=sdRoundBox(p,vec3(30.,4.,28.),3.,vec3(0.,59.,0.));
     float legR=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(25.,0.,20.));
     float legL=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(-25.,0.,20.));
@@ -73,9 +74,9 @@ float sdChair(vec3 p){
     float sideSupportMiddleR=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,42.,0.));
     float sideSupportMiddleL=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(-25.,42.,0.));
     float backrest=sdRoundBox(p,vec3(32.,18.,3.),3.,vec3(0.,103.,-20.));
-
+    
     float whiteBox=sdRoundBox(p,vec3(40.,80.,40.),1.,vec3(0.));
-
+    
     float d=0.;
     d=min(legR,legL);
     d=min(d,seat);
@@ -93,10 +94,10 @@ float sdChair(vec3 p){
 
 float sdRoom(vec3 p){
     float floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    float backWall=sdBox(p,vec3(5000.,5000.,1.),vec3(0.,0.,1200.));
-    p*=rotationMatrix(vec3(0.,0.,0));
-    float sideWindow=sdBox(p,vec3(2.,300.,200.),vec3(100.,80.,0.));
-    float sideWall=sdBox(p,vec3(1.,5000.,5000.),vec3(100.,0.,0.));
+    floor=sdPlane(p,vec3(0.,1.,0.),0.);
+    float backWall=sdBox(p,vec3(500.,500.,1.),vec3(0.,0.,130.));
+    float sideWindow=sdBox(p,vec3(2.,200.,200.),vec3(280.,0.,0.));
+    float sideWall=sdBox(p,vec3(1.,500.,500.),vec3(280.,0.,0.));
     
     float d=0.;
     d=min(floor,backWall);
@@ -107,7 +108,12 @@ float sdRoom(vec3 p){
 float map(vec3 p){
     float room=sdRoom(p);
     float chair=sdChair(p);
-    return min(chair,room);
+    float testCastShadw=sdBox(p,vec3(5.,100.,60.),vec3(60.,0.,20.));
+    float d=0.;
+    d=min(chair,room);
+    // d=min(d,testCastShadw);
+    
+    return d;
 }
 
 float rayMarch(vec3 ro,vec3 rd,float start,float end){
@@ -154,10 +160,10 @@ float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
     // bounding volume
     float tp=(.8-ro.y)/rd.y;
     if(tp>0.)tmax=min(tmax,tp);
-
+    
     float res=1.;
     float t=mint;
-    for(int i=0;i<24;i++)
+    for(int i=0;i<MAX_MARCHING_STEPS;i++)
     {
         float h=map(ro+rd*t);
         float s=clamp(8.*h/t,0.,1.);
@@ -175,7 +181,7 @@ vec3 acesFilm(vec3 x)
     const float c=2.43;
     const float d=.59;
     const float e=.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0., 1.);
+    return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.);
 }
 
 vec3 render(vec3 ro,vec3 rd){
@@ -187,12 +193,18 @@ vec3 render(vec3 ro,vec3 rd){
     vec3 p=ro+rd*d;
     vec3 normal=calcNormal(p);
     
-    vec3 lightDir=normalize(vec3(1.,.6,-1.));
+    vec3 lightPosition=vec3(600.,600.,70.);
+    vec3 lightDir=normalize(lightPosition-p);
+    //vec3 lightDir=normalize(vec3(1.,.6,-1.));
     vec3 albedo=vec3(.7,.6,.6);
     float diffuse=clamp(dot(normal,lightDir),.3,1.);
-    float specular=pow(clamp(dot(reflect(lightDir,normal),rd),0.,1.), 10.);
+    float specular=pow(clamp(dot(reflect(lightDir,normal),rd),0.,1.),10.);
     float ao=calcAO(p,normal);
     float shadow=calcSoftshadow(p,lightDir,.25,5.);
+    
+    vec3 newRayOrigin=p+normal*PRECISION*2.;
+    float shadowRayLength=rayMarch(newRayOrigin,lightDir,MIN_DIST,MAX_DIST);
+    if(shadowRayLength<length(lightPosition-newRayOrigin))diffuse*=0.;// shadow
     
     col+=albedo*diffuse*shadow;
     col+=albedo*ao*SKY_COLOR;
@@ -211,19 +223,20 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv.x*=iResolution.x/iResolution.y;
     
     vec3 ro=vec3(0.,130.,-817.);
-    vec3 camTarget=vec3(0.,45.,0.);
+    vec3 camTarget=vec3(0.,45.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    float fov=150.;
+    float fov=110.;
     //TOOD:zoomを作成する
-
+    //TODO:NearClipFarClipの作成
+    
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-
+    
     col=render(ro,rd);
     fragColor=vec4(col,1.);
 }
