@@ -59,25 +59,33 @@ float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
 }
 
 float sdChair(vec3 p){
-    p*=rotationMatrix(vec3(0.,200.,0));
-    
-    float seat=sdRoundBox(p,vec3(30.,5.,28.),3.,vec3(0.,60.,0.));
-    float legR=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(22.,0.,20.));
-    float legL=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(-22.,0.,20.));
-    float frontSupport=sdRoundBox(p,vec3(25.,3.,3.),1.,vec3(0.,57.,20.));
-    float backSupportR=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(22.,0.,-27.));
-    float backSupportL=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(-22.,0.,-27.));
-    
-    float backrest=sdRoundBox(p,vec3(32.,20.,3.),3.,vec3(0.,100.,-20.));
-    
+
+    p*=rotationMatrix(vec3(0.,210.,0));
+
+    float seat=sdRoundBox(p,vec3(30.,4.,28.),3.,vec3(0.,59.,0.));
+    float legR=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(25.,0.,20.));
+    float legL=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(-25.,0.,20.));
+    float frontSupport=sdRoundBox(p,vec3(25.,3.,3.),1.,vec3(0.,53.,20.));
+    float backSupportR=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(25.,0.,-27.));
+    float backSupportL=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(-25.,0.,-27.));
+    float sideSupportTopR=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,53.,0.));
+    float sideSupportTopL=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,53.,0.));
+    float sideSupportMiddleR=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,42.,0.));
+    float sideSupportMiddleL=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(-25.,42.,0.));
+    float backrest=sdRoundBox(p,vec3(32.,18.,3.),3.,vec3(0.,103.,-20.));
+
     float whiteBox=sdRoundBox(p,vec3(40.,80.,40.),1.,vec3(0.));
-    
+
     float d=0.;
     d=min(legR,legL);
     d=min(d,seat);
     d=min(d,frontSupport);
     d=min(d,backSupportR);
     d=min(d,backSupportL);
+    d=min(d,sideSupportTopR);
+    d=min(d,sideSupportTopL);
+    d=min(d,sideSupportMiddleR);
+    d=min(d,sideSupportMiddleL);
     d=min(d,backrest);
     // d=min(d,whiteBox);
     return d;
