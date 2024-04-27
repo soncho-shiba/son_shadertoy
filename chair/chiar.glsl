@@ -45,7 +45,6 @@ float sdPlane(vec3 p,vec3 n,float h){
 
 float sdBox(vec3 p,vec3 b,vec3 offset)
 {
-    
     offset.y+=b.y;//原点を(b.y)Yminに設定してoffsetする
     p-=offset;
     vec3 q=abs(p)-b;
@@ -94,25 +93,25 @@ float sdChair(vec3 p){
 
 float sdRoom(vec3 p){
     float floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    floor=sdPlane(p,vec3(0.,1.,0.),0.);
-    float backWall=sdBox(p,vec3(500.,500.,1.),vec3(0.,0.,130.));
-    float sideWindow=sdBox(p,vec3(2.,200.,200.),vec3(280.,0.,0.));
-    float sideWall=sdBox(p,vec3(1.,500.,500.),vec3(280.,0.,0.));
-    
+    float ceiling=sdBox(p,vec3(300.,1.,500.),vec3(0.,400.,0.));
+    float backWall=sdBox(p,vec3(300.,200.,1.),vec3(0.,0.,130.));
+    float sideWindow=sdBox(p,vec3(2.,150.,200.),vec3(300.,0.,0.));
+    float sideWallR=sdBox(p,vec3(1.,200.,500.),vec3(300.,0.,-100.));
+    float sideWallL=sdBox(p,vec3(1.,200.,500.),vec3(-300.,0.,0.));
     float d=0.;
-    d=min(floor,backWall);
-    d=min(d,max(sideWall,-sideWindow));
+    d=min(floor,ceiling);
+    d=min(d,backWall);
+    d=min(d,max(sideWallR,-sideWindow));
+    d=min(d,sideWallL);
     return d;
 }
 
 float map(vec3 p){
+    
     float room=sdRoom(p);
     float chair=sdChair(p);
-    float testCastShadw=sdBox(p,vec3(5.,100.,60.),vec3(60.,0.,20.));
     float d=0.;
     d=min(chair,room);
-    // d=min(d,testCastShadw);
-    
     return d;
 }
 
@@ -193,9 +192,9 @@ vec3 render(vec3 ro,vec3 rd){
     vec3 p=ro+rd*d;
     vec3 normal=calcNormal(p);
     
-    vec3 lightPosition=vec3(600.,600.,70.);
-    vec3 lightDir=normalize(lightPosition-p);
-    //vec3 lightDir=normalize(vec3(1.,.6,-1.));
+    vec3 lightPosition=vec3(2000.,2000.,0.);
+    //vec3 lightDir=normalize(lightPosition-p);
+    vec3 lightDir=vec3(.2,.11,-.029);
     vec3 albedo=vec3(.7,.6,.6);
     float diffuse=clamp(dot(normal,lightDir),.3,1.);
     float specular=pow(clamp(dot(reflect(lightDir,normal),rd),0.,1.),10.);
@@ -222,17 +221,17 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv-=.5;
     uv.x*=iResolution.x/iResolution.y;
     
-    vec3 ro=vec3(0.,130.,-817.);
-    vec3 camTarget=vec3(0.,45.,50.);
+    vec3 ro=vec3(0.,135.,-817.);
+    vec3 camTarget=vec3(0.,50.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    float fov=110.;
+    float fov=150.;
     //TOOD:zoomを作成する
-    //TODO:NearClipFarClipの作成
-    
+    //TODO:NearClip/FarClipの作成
+    //TODO:キャンパスサイズを正方形に固定する
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
