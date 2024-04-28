@@ -240,14 +240,14 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv-=.5;
     uv.x*=iResolution.x/iResolution.y;
     
-    vec3 ro=vec3(0.,135.,-817.);
-    vec3 camTarget=vec3(0.,50.,50.);
+    vec3 ro=vec3(-200.,160.,-817.);
+    vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(ro-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    float fov=150.;
+    float fov=145.;
     //TOOD:zoomを作成する
     //TODO:NearClip/FarClipの作成
     //TODO:キャンパスサイズを正方形に固定する
