@@ -254,9 +254,17 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-    
-    col=render(ro,rd);
-    col=postprocess(col,uv);
+    if(uv.x>.3||uv.x<-.3||uv.y>.3||uv.y<-.3)
+    {
+        col=vec3(0.);
+        
+    }
+    else
+    {
+        col=render(ro,rd);
+        col=postprocess(col,uv);
+        
+    }
     
     fragColor=vec4(col,1.);
 }
