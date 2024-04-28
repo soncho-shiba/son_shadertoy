@@ -173,6 +173,21 @@ float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
     return clamp(res,0.,1.);
 }
 
+
+
+// http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
+float rand(vec2 co){
+    return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43758.5453)*.5-.25;
+}
+
+vec3 noise(vec3 col,vec2 uv,float level){
+    return vec3(rand(uv+1.)*level,rand(uv+2.)*level,rand(uv+3.)*level);
+}
+
+vec3 screenComposition(vec3 bottom,vec3 top)
+{
+    return bottom+top-bottom*top/1.;
+}
 vec3 acesFilm(vec3 x)
 {
     const float a=2.51;
@@ -182,7 +197,6 @@ vec3 acesFilm(vec3 x)
     const float e=.14;
     return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.);
 }
-
 vec3 render(vec3 ro,vec3 rd){
     vec3 col=vec3(0.);
     
@@ -208,8 +222,13 @@ vec3 render(vec3 ro,vec3 rd){
     col+=albedo*diffuse*shadow;
     col+=albedo*ao*SKY_COLOR;
     
-    col=acesFilm(col*.8);
-    col*=.8;
+    return col;
+}
+
+vec3 postprocess(vec3 col,vec2 uv)
+{
+    col=screenComposition(col,noise(col,uv,.5));
+    //col=acesFilm(col*.8);
     return col;
 }
 
@@ -237,5 +256,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
     
     col=render(ro,rd);
+    col=postprocess(col,uv);
+    
     fragColor=vec4(col,1.);
 }
