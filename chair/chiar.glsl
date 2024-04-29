@@ -58,37 +58,51 @@ float sdRoundBox(vec3 p,vec3 b,float r,vec3 offset){
     vec3 q=abs(p)-b+r;
     return length(max(q,0.))+min(max(q.x,max(q.y,q.z)),0.)-r;
 }
-
 float sdChair(vec3 p){
+    const float CHAIR_HEIGHT=120.;
+    const float CHAIR_WIDTH=60.;
+    const float CHAIR_DEPTH=60.;
     
-    p*=rotationMatrix(vec3(0.,200.,0));
+    p*=rotationMatrix(vec3(0.,210.,0));
     
-    float seat=sdRoundBox(p,vec3(30.,4.,28.),3.,vec3(0.,59.,0.));
-    float legR=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(25.,0.,20.));
-    float legL=sdRoundBox(p,vec3(3.,30.,3.),1.,vec3(-25.,0.,20.));
-    float frontSupport=sdRoundBox(p,vec3(25.,3.,3.),1.,vec3(0.,53.,20.));
-    float backSupportR=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(25.,0.,-27.));
-    float backSupportL=sdRoundBox(p,vec3(3.,68.,3.),1.,vec3(-25.,0.,-27.));
-    float sideSupportTopR=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,53.,0.));
-    float sideSupportTopL=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,53.,0.));
-    float sideSupportMiddleR=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(25.,42.,0.));
-    float sideSupportMiddleL=sdRoundBox(p,vec3(3.,3.,21.),1.,vec3(-25.,42.,0.));
-    float backrest=sdRoundBox(p,vec3(32.,18.,3.),3.,vec3(0.,103.,-20.));
+    float seatHeight=4.;
+    float seatWidth=CHAIR_WIDTH*.5;
+    float seatDepth=CHAIR_DEPTH*.5;
     
-    float whiteBox=sdRoundBox(p,vec3(40.,80.,40.),1.,vec3(0.));
+    float legWidth=3.;
+    float legHeight=CHAIR_HEIGHT*.25;
+    float legDepth=3.;
+    float legR=sdRoundBox(p,vec3(legWidth,legHeight,legDepth),1.,vec3(seatWidth-legWidth,0.,seatDepth-legDepth));
+    float legL=sdRoundBox(p,vec3(legWidth,legHeight,legDepth),1.,vec3(-(seatWidth-legWidth),0.,seatDepth-legDepth));
     
-    float d=0.;
-    d=min(legR,legL);
-    d=min(d,seat);
-    d=min(d,frontSupport);
-    d=min(d,backSupportR);
-    d=min(d,backSupportL);
-    d=min(d,sideSupportTopR);
-    d=min(d,sideSupportTopL);
-    d=min(d,sideSupportMiddleR);
-    d=min(d,sideSupportMiddleL);
+    float seat=sdRoundBox(p,vec3(seatWidth,seatHeight,seatDepth),3.,vec3(0.,legHeight*2.,0.));
+    
+    float supportWidth=CHAIR_WIDTH*.45;
+    float supportHeight=3.;
+    float supportDepth=3.;
+    float frontSupport=sdRoundBox(p,vec3(supportWidth,supportHeight,supportDepth),1.,vec3(0.,CHAIR_HEIGHT*.45,seatDepth-supportDepth));
+    
+    float backSupportHeight=CHAIR_HEIGHT*.55;
+    float backSupportR=sdRoundBox(p,vec3(legWidth,backSupportHeight,legDepth),1.,vec3(seatWidth-legWidth,0.,-(seatDepth-legDepth)));
+    float backSupportL=sdRoundBox(p,vec3(legWidth,backSupportHeight,legDepth),1.,vec3(-(seatWidth-legWidth),0.,-(seatDepth-legDepth)));
+    
+    float backrestHeight=18.;
+    float backrestWidth=CHAIR_WIDTH*.55;
+    float backrestDepth=3.;
+    float backrest=sdRoundBox(p,vec3(backrestWidth,backrestHeight,backrestDepth),3.,vec3(0.,CHAIR_HEIGHT-backrestHeight,-seatDepth+backrestDepth*2.));
+    
+    float sideSupportWidth=legWidth-2.;
+    float sideSupportDepth=24.;
+    float sideSupportOffsetX=seatWidth;
+    float sideSupportTopR=sdRoundBox(p,vec3(sideSupportWidth,supportHeight,sideSupportDepth),1.,vec3(sideSupportOffsetX-legWidth,CHAIR_HEIGHT*.45,0.));
+    float sideSupportTopL=sdRoundBox(p,vec3(sideSupportWidth,supportHeight,sideSupportDepth),1.,vec3(-(sideSupportOffsetX-legWidth),CHAIR_HEIGHT*.45,0.));
+    float sideSupportMiddleR=sdRoundBox(p,vec3(sideSupportWidth,supportHeight,sideSupportDepth),1.,vec3(sideSupportOffsetX-legWidth,CHAIR_HEIGHT*.35,0.));
+    float sideSupportMiddleL=sdRoundBox(p,vec3(sideSupportWidth,supportHeight,sideSupportDepth),1.,vec3(-(sideSupportOffsetX-legWidth),CHAIR_HEIGHT*.35,0.));
+    
+    float d=min(min(min(legR,legL),seat),min(frontSupport,min(backSupportR,backSupportL)));
+    d=min(d,min(min(sideSupportTopR,sideSupportTopL),min(sideSupportMiddleR,sideSupportMiddleL)));
     d=min(d,backrest);
-    //d=min(d,whiteBox);
+    
     return d;
 }
 
@@ -108,8 +122,11 @@ float sdRoom(vec3 p){
 }
 
 float map(vec3 p){
-    
     float room=sdRoom(p);
+    // Mouse Interact
+    // https://www.shadertoy.com/view/Mss3zH
+    //p=p*rotationMatrix(vec3(0.,0.,-90));//原点を(b.y)Yminに設定してoffsetする
+    
     float chair=sdChair(p);
     float d=0.;
     d=min(chair,room);
@@ -139,8 +156,7 @@ vec3 calcNormal(in vec3 p){
     e.xxx*map(p+e.xxx*eps));
 }
 
-float calcAO(vec3 pos,vec3 nor)
-{
+float calcAO(vec3 pos,vec3 nor){
     float occ=0.;
     float sca=1.;
     for(int i=0;i<5;i++)
@@ -155,8 +171,7 @@ float calcAO(vec3 pos,vec3 nor)
 }
 
 // http://iquilezles.org/www/articles/rmshadows/rmshadows.htm
-float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
-{
+float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax){
     // bounding volume
     float tp=(.8-ro.y)/rd.y;
     if(tp>0.)tmax=min(tmax,tp);
@@ -174,15 +189,11 @@ float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
     return clamp(res,0.,1.);
 }
 
-vec3 screenComposition(vec3 bottom,vec3 top)
-{
+vec3 screenComposition(vec3 bottom,vec3 top){
     return bottom+top-bottom*top/1.;
 }
 
-v
-
-vec3 acesFilm(vec3 x)
-{
+vec3 acesFilm(vec3 x){
     const float a=2.51;
     const float b=.03;
     const float c=2.43;
@@ -219,16 +230,14 @@ vec3 render(vec3 ro,vec3 rd){
     return col;
 }
 
-vec3 postprocess(vec3 col,vec2 uv)
-{   
-    vec3 noiseCol = noise(uv,.5);
+vec3 postprocess(vec3 col,vec2 uv){
+    vec3 noiseCol=noise(uv,.5);
     col=screenComposition(col,noiseCol);
     //col=acesFilm(col*.8);
     return col;
 }
 
-void mainImage(out vec4 fragColor,in vec2 fragCoord)
-{
+void mainImage(out vec4 fragColor,in vec2 fragCoord){
     vec3 col=vec3(0);
     
     vec2 uv=fragCoord/iResolution.xy;
@@ -238,7 +247,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camBasePos=vec3(-200.,160.,-817.);
     vec3 camMover=vec3(fbm(iTime*.3),fbm(iTime*.2+.5)*.3,0.);
     vec3 ro=camBasePos+camMover;
-
+    
     vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
