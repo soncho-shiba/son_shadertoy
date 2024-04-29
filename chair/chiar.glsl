@@ -245,12 +245,13 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
     vec3 camForward=normalize(camBasePos-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
-    float fov=145.;
+    float fov=150.;
     
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
+    
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
-    if(uv.x>.3||uv.x<-.3||uv.y>.3||uv.y<-.3)
+    if(uv.x>.35||uv.x<-.35||uv.y>.35||uv.y<-.35)
     {
         col=vec3(0.);
     }
