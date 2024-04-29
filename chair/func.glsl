@@ -28,7 +28,7 @@ float fbm(float x)
 {
     float result=0.;
     
-    // TODO: 手振れっぽいノイズになるように周波数/振幅/オクターブ調整をする
+    // TODO: 手振れっぽいノイズになるように調整をする
     float frequency=1.;
     float amplitude=1.;
     int octave=5;

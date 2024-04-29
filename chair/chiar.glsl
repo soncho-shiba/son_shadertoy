@@ -179,6 +179,8 @@ vec3 screenComposition(vec3 bottom,vec3 top)
     return bottom+top-bottom*top/1.;
 }
 
+v
+
 vec3 acesFilm(vec3 x)
 {
     const float a=2.51;
@@ -218,8 +220,9 @@ vec3 render(vec3 ro,vec3 rd){
 }
 
 vec3 postprocess(vec3 col,vec2 uv)
-{
-    col=screenComposition(col,noise(uv,.5));
+{   
+    vec3 noiseCol = noise(uv,.5);
+    col=screenComposition(col,noiseCol);
     //col=acesFilm(col*.8);
     return col;
 }
@@ -233,8 +236,9 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv.x*=iResolution.x/iResolution.y;
     
     vec3 camBasePos=vec3(-200.,160.,-817.);
-    vec3 camMover=vec3(fbm(iTime*.3),fbm(iTime*.2+.5)*.2,0.);
+    vec3 camMover=vec3(fbm(iTime*.3),fbm(iTime*.2+.5)*.3,0.);
     vec3 ro=camBasePos+camMover;
+
     vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
