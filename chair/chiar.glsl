@@ -1,4 +1,4 @@
-#include "D:/CG_Work/Work/Git/son_shadertoy/chair/common.glsl"
+#include "D:/CG_Work/Work/Git/son_shadertoy/chair/func.glsl"
 
 #define PI 3.14159265
 const int MAX_MARCHING_STEPS=511;
@@ -219,7 +219,7 @@ vec3 render(vec3 ro,vec3 rd){
 
 vec3 postprocess(vec3 col,vec2 uv)
 {
-    col=screenComposition(col,noise(col,uv,.5));
+    col=screenComposition(col,noise(uv,.5));
     //col=acesFilm(col*.8);
     return col;
 }
@@ -233,8 +233,8 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv.x*=iResolution.x/iResolution.y;
     
     vec3 camBasePos=vec3(-200.,160.,-817.);
-    vec3 camMover=vec3(cos(iTime)*5.,sin(iTime)*3.,0.);
-    vec3 ro = camBasePos + camMover;
+    vec3 camMover=vec3(fbm(iTime)*10.,0.,0.);
+    vec3 ro=camBasePos+camMover;
     vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
@@ -254,7 +254,6 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     {
         col=render(ro,rd);
         col=postprocess(col,uv);
-        
     }
     
     fragColor=vec4(col,1.);
