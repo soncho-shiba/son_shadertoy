@@ -193,15 +193,6 @@ vec3 screenComposition(vec3 bottom,vec3 top){
     return bottom+top-bottom*top/1.;
 }
 
-vec3 acesFilm(vec3 x){
-    const float a=2.51;
-    const float b=.03;
-    const float c=2.43;
-    const float d=.59;
-    const float e=.14;
-    return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.);
-}
-
 vec3 render(vec3 ro,vec3 rd){
     vec3 col=vec3(0.);
     
@@ -233,7 +224,6 @@ vec3 render(vec3 ro,vec3 rd){
 vec3 postprocess(vec3 col,vec2 uv){
     vec3 noiseCol=noise(uv,.5);
     col=screenComposition(col,noiseCol);
-    //col=acesFilm(col*.8);
     return col;
 }
 
