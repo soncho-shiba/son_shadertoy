@@ -1,3 +1,4 @@
+#include "D:/CG_Work/Work/Git/son_shadertoy/chair/common.glsl"
 
 #define PI 3.14159265
 const int MAX_MARCHING_STEPS=511;
@@ -94,7 +95,7 @@ float sdChair(vec3 p){
 float sdRoom(vec3 p){
     float floor=sdPlane(p,vec3(0.,1.,0.),0.);
     float ceiling=sdBox(p,vec3(300.,1.,500.),vec3(0.,400.,0.));
-    float backWall=sdBox(p,vec3(300.,200.,1.),vec3(0.,0.,130.));
+    float backWall=sdBox(p,vec3(300.,200.,1.),vec3(0.,0.,140.));
     float sideWindow=sdBox(p,vec3(2.,150.,200.),vec3(300.,0.,0.));
     float sideWallR=sdBox(p,vec3(1.,200.,500.),vec3(300.,0.,-100.));
     float sideWallL=sdBox(p,vec3(1.,200.,500.),vec3(-300.,0.,0.));
@@ -173,21 +174,11 @@ float calcSoftshadow(vec3 ro,vec3 rd,float mint,float tmax)
     return clamp(res,0.,1.);
 }
 
-
-
-// http://stackoverflow.com/questions/4200224/random-noise-functions-for-glsl
-float rand(vec2 co){
-    return fract(sin(dot(co.xy,vec2(12.9898,78.233)))*43758.5453)*.5-.25;
-}
-
-vec3 noise(vec3 col,vec2 uv,float level){
-    return vec3(rand(uv+1.)*level,rand(uv+2.)*level,rand(uv+3.)*level);
-}
-
 vec3 screenComposition(vec3 bottom,vec3 top)
 {
     return bottom+top-bottom*top/1.;
 }
+
 vec3 acesFilm(vec3 x)
 {
     const float a=2.51;
@@ -197,6 +188,7 @@ vec3 acesFilm(vec3 x)
     const float e=.14;
     return clamp((x*(a*x+b))/(x*(c*x+d)+e),0.,1.);
 }
+
 vec3 render(vec3 ro,vec3 rd){
     vec3 col=vec3(0.);
     
@@ -240,24 +232,23 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv-=.5;
     uv.x*=iResolution.x/iResolution.y;
     
-    vec3 ro=vec3(-200.,160.,-817.);
+    vec3 camBasePos=vec3(-200.,160.,-817.);
+    vec3 camMover=vec3(cos(iTime)*5.,sin(iTime)*3.,0.);
+    vec3 ro = camBasePos + camMover;
     vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
     
     vec3 camUp=normalize(camRotMatrix*vec3(0.,1.,0.));
-    vec3 camForward=normalize(ro-camTarget);
+    vec3 camForward=normalize(camBasePos-camTarget);
     vec3 camRight=normalize(cross(camForward,camUp));
     float fov=145.;
-    //TOOD:zoomを作成する
-    //TODO:NearClip/FarClipの作成
-    //TODO:キャンパスサイズを正方形に固定する
+    
     vec3 rd=normalize(camRight*uv.x+camUp*uv.y+camForward/tan(radians(fov)));
     vec3 p=ro;
     float d=rayMarch(p,rd,MIN_DIST,MAX_DIST);
     if(uv.x>.3||uv.x<-.3||uv.y>.3||uv.y<-.3)
     {
         col=vec3(0.);
-        
     }
     else
     {
