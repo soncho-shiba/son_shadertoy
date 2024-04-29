@@ -233,7 +233,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     uv.x*=iResolution.x/iResolution.y;
     
     vec3 camBasePos=vec3(-200.,160.,-817.);
-    vec3 camMover=vec3(fbm(iTime)*10.,0.,0.);
+    vec3 camMover=vec3(fbm(iTime*.3),fbm(iTime*.2+.5)*.2,0.);
     vec3 ro=camBasePos+camMover;
     vec3 camTarget=vec3(0.,100.,50.);
     mat3 camRotMatrix=rotationMatrix(vec3(-5.,0.,0.));
