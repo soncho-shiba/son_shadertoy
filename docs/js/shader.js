@@ -52,7 +52,9 @@ function createProgram(gl, vsSource, fsSource) {
 }
 
 (async () => {
-  let fs = await loadShaderSource('shaders/raymarchingChair.glsl');
+  // Load the shader relative to the HTML file rather than this module's path
+  // so it works correctly when served from GitHub Pages.
+  let fs = await loadShaderSource('../shaders/raymarchingChair.glsl');
   const header = `#version 300 es\nprecision highp float;\nuniform vec3 iResolution;\nuniform float iTime;\nout vec4 outColor;\n`;
   const footer = `\nvoid main(){\n    mainImage(outColor, gl_FragCoord.xy);\n}`;
   const fsSource = header + fs + footer;
