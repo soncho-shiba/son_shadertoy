@@ -20,8 +20,16 @@ function resize() {
 window.addEventListener('resize', resize);
 
 async function loadShaderSource(url) {
-  const res = await fetch(url);
-  return await res.text();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch shader: ${res.status} ${res.statusText}`);
+    }
+    return await res.text();
+  } catch (error) {
+    console.error('Error loading shader from:', url, error);
+    throw error;
+  }
 }
 
 function createShader(gl, type, source) {
@@ -52,12 +60,13 @@ function createProgram(gl, vsSource, fsSource) {
 }
 
 (async () => {
-  // Load the shader relative to the HTML file rather than this module's path
-  // so it works correctly when served from GitHub Pages.
-  let fs = await loadShaderSource('../shaders/raymarchingChair.glsl');
-  const header = `#version 300 es\nprecision highp float;\nuniform vec3 iResolution;\nuniform float iTime;\nout vec4 outColor;\n`;
-  const footer = `\nvoid main(){\n    mainImage(outColor, gl_FragCoord.xy);\n}`;
-  const fsSource = header + fs + footer;
+  try {
+    // Load the shader relative to the HTML file rather than this module's path
+    // so it works correctly when served from GitHub Pages.
+    let fs = await loadShaderSource('./shaders/raymarchingChair.glsl');
+    const header = `#version 300 es\nprecision highp float;\nuniform vec3 iResolution;\nuniform float iTime;\nout vec4 outColor;\n`;
+    const footer = `\nvoid main(){\n    mainImage(outColor, gl_FragCoord.xy);\n}`;
+    const fsSource = header + fs + footer;
 
   const vsSource = `#version 300 es\nprecision highp float;\nin vec4 aPosition;\nvoid main() {\n  gl_Position = aPosition;\n}`;
   const program = createProgram(gl, vsSource, fsSource);
@@ -91,4 +100,8 @@ function createProgram(gl, vsSource, fsSource) {
     requestAnimationFrame(render);
   }
   requestAnimationFrame(render);
+  } catch (error) {
+    console.error('Failed to initialize shader:', error);
+    document.body.innerHTML = '<div style="color: red; padding: 20px;">Failed to load shader: ' + error.message + '</div>';
+  }
 })();
