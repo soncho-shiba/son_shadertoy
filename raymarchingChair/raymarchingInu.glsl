@@ -55,7 +55,7 @@ vec3 getRotatePosFromMouse(vec2 pos,vec3 rayPos){
     if(angle >90.0){
         angle = 90.0;
     }
-    if(sq != 1.0){
+    if(sq != 1.0 && sq > 0.0001){
         sq = 1.0 / sq;
         mouse_pos.x *= sq;
         mouse_pos.y *= sq;
@@ -295,7 +295,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 ray=normalize(cameraSide*pos.x+cameraUP*pos.y+cameraDir*targetDepth);
 
     // レイの方向(カメラから描画位置へのベクトル)を決定
-    vec3 rayDir=normalize(vec3(pos,0.)-cameraPos);
+    vec3 rayDir=ray;
 
     // 現在のレイの先端座標
     vec3 rayPos=cameraPos;
@@ -309,6 +309,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     ///レイマーチンググループ---------------------------------
 
     // 今回はレイを進める回数が最大256回
+    const float MAX_DIST = 100.0;
     for(int i=0;i<256;i++)
     {
         // レイの先端と球の距離を計測
@@ -336,7 +337,11 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
             break;
         }
 
-        col = col;
+        // Check if ray has traveled too far
+        rayLen += distance;
+        if(rayLen > MAX_DIST) {
+            break;
+        }
 
         rayPos+=rayDir*distance;
 
