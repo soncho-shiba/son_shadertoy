@@ -295,7 +295,7 @@ void mainImage(out vec4 fragColor,in vec2 fragCoord)
     vec3 ray=normalize(cameraSide*pos.x+cameraUP*pos.y+cameraDir*targetDepth);
 
     // レイの方向(カメラから描画位置へのベクトル)を決定
-    vec3 rayDir=normalize(vec3(pos,0.)-cameraPos);
+    vec3 rayDir=normalize(vec3(pos,-targetDepth)-cameraPos);
 
     // 現在のレイの先端座標
     vec3 rayPos=cameraPos;
