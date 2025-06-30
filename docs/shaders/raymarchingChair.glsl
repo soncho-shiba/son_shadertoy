@@ -49,7 +49,7 @@ vec3 calcNormal(vec3 p){
         // ray origin(=カメラの位置)
         vec3 rayOrigin=vec3(0.,0.,3.);
         // ray direction(rayOrigin から描画位置へのベクトル)
-        vec3 rayDir = normalize(vec3(uv,0.));
+        vec3 rayDir = normalize(vec3(uv,-1.));
         
         float d=rayMarch(rayOrigin,rayDir,MIN_DIST,MAX_DIST);// distance to sphere
         
